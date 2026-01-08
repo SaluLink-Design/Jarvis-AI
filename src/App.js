@@ -59,10 +59,15 @@ const App = () => {
       if (response.ok) {
         const data = await response.json();
         console.log('Image processing result:', data);
-        setSceneData(prev => ({
-          ...prev,
-          objects: [...prev.objects, ...data.objects]
-        }));
+        // Handle both old format (data.objects) and new format (data.sceneData)
+        if (data.sceneData) {
+          setSceneData(data.sceneData);
+        } else if (data.objects) {
+          setSceneData(prev => ({
+            ...prev,
+            objects: [...prev.objects, ...data.objects]
+          }));
+        }
       } else {
         console.error('Response not OK:', response.status, response.statusText);
         const errorText = await response.text();
