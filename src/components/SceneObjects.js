@@ -81,6 +81,7 @@ const ModelLoader = ({ modelPath, position, scale, color, hiddenParts = [], onPa
           simulation={simulation}
           objectPosition={position}
           objectRef={groupRef}
+          objectScale={scale}
         />
       )}
     </group>
