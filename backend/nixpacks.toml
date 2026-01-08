@@ -4,7 +4,8 @@ nixPkgs = ["python311", "gcc", "gccStdenv"]
 [phases.install]
 cmds = [
   "pip install --upgrade pip setuptools wheel",
-  "pip install -r requirements.txt"
+  "pip install -r requirements.txt",
+  "pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl"
 ]
 
 [phases.build]

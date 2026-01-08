@@ -8,24 +8,16 @@ app = Flask(__name__)
 CORS(app)
 
 # Load spaCy model for NLP
+nlp = None
 try:
     nlp = spacy.load("en_core_web_sm")
+    print("spaCy model loaded successfully!")
 except OSError:
-    # Model not found, try to download it
-    import subprocess
-    import sys
-    print("spaCy model not found. Attempting to download...")
-    try:
-        subprocess.check_call([sys.executable, "-m", "spacy", "download", "en_core_web_sm"])
-        nlp = spacy.load("en_core_web_sm")
-        print("spaCy model downloaded successfully!")
-    except Exception as e:
-        print(f"Failed to download spaCy model: {e}")
-        print("Please install spaCy model: python -m spacy download en_core_web_sm")
-        nlp = None
+    print("Warning: spaCy model 'en_core_web_sm' not found.")
+    print("The app will work without NLP features. Model should be downloaded during build.")
 except Exception as e:
     print(f"Error loading spaCy model: {e}")
-    nlp = None
+    print("The app will work without NLP features.")
 
 # Simple rule-based text-to-3D scene generator
 class SceneGenerator:

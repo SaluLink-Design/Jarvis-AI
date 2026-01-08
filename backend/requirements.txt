@@ -5,4 +5,6 @@ spacy==3.7.4
 pillow==10.1.0
 numpy==1.26.2
 gunicorn==21.2.0
+# spaCy English model (compatible with spacy 3.7.x)
+https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
 
