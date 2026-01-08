@@ -107,12 +107,13 @@ const App = () => {
       const objectUrl = URL.createObjectURL(file);
       
       // Create a new object in the scene with the uploaded model
+      // Start with a smaller default scale (0.2) so large models fit better
       const newObject = {
         type: 'custom',
         model: 'uploaded_model',
         position: [0, 1, 0],
         color: '#ffffff',
-        scale: 1.0,
+        scale: 0.2,
         modelPath: objectUrl, // Use object URL for direct loading
         source: 'file_upload',
         fileName: file.name,

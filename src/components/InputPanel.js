@@ -199,20 +199,50 @@ const InputPanel = ({
                     
                     <div className="control-group">
                       <label className="control-label">
-                        Scale: {obj.scale?.toFixed(2) || '1.00'}
+                        Scale: {obj.scale < 0.1 ? obj.scale?.toFixed(3) : obj.scale?.toFixed(2) || '1.00'}
                       </label>
                       <input
                         type="range"
-                        min="0.1"
+                        min="0.01"
                         max="5"
-                        step="0.1"
+                        step="0.01"
                         value={obj.scale || 1}
                         onChange={(e) => onObjectScaleChange(objectId, parseFloat(e.target.value))}
                         className="control-slider"
                       />
                       <div className="slider-values">
-                        <span>0.1</span>
+                        <span>0.01</span>
                         <span>5.0</span>
+                      </div>
+                      <div className="quick-scale-buttons">
+                        <button
+                          className="quick-scale-btn"
+                          onClick={() => onObjectScaleChange(objectId, 0.05)}
+                          title="Very Small"
+                        >
+                          0.05
+                        </button>
+                        <button
+                          className="quick-scale-btn"
+                          onClick={() => onObjectScaleChange(objectId, 0.1)}
+                          title="Small"
+                        >
+                          0.1
+                        </button>
+                        <button
+                          className="quick-scale-btn"
+                          onClick={() => onObjectScaleChange(objectId, 0.5)}
+                          title="Medium"
+                        >
+                          0.5
+                        </button>
+                        <button
+                          className="quick-scale-btn"
+                          onClick={() => onObjectScaleChange(objectId, 1.0)}
+                          title="Normal"
+                        >
+                          1.0
+                        </button>
                       </div>
                     </div>
 
