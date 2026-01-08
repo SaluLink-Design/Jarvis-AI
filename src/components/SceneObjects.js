@@ -1,10 +1,57 @@
 import React from 'react';
-import { Box, Sphere, Cylinder, Cone } from '@react-three/drei';
+import { Box, Sphere, Cylinder, Cone, useGLTF } from '@react-three/drei';
+
+// Preload common models (can be expanded)
+// Note: If modelPath doesn't exist, the system will fall back to simple shapes
+const ModelLoader = ({ modelPath, position, scale, color }) => {
+  const { scene } = useGLTF(modelPath);
+  
+  React.useEffect(() => {
+    // Apply color tint if provided
+    if (color && scene) {
+      scene.traverse((child) => {
+        if (child.isMesh && child.material) {
+          // Only modify color if material exists and is not an array
+          if (Array.isArray(child.material)) {
+            child.material.forEach(mat => {
+              if (mat) mat.color.set(color);
+            });
+          } else if (child.material.color) {
+            child.material.color.set(color);
+          }
+        }
+      });
+    }
+  }, [scene, color]);
+  
+  return (
+    <primitive 
+      object={scene.clone()} 
+      position={position} 
+      scale={scale}
+      castShadow
+      receiveShadow
+    />
+  );
+};
 
 const SceneObjects = ({ objects }) => {
   const renderObject = (obj, index) => {
-    const { type, position = [0, 1, 0], color = '#00ffff', scale = 1, model } = obj;
+    const { type, position = [0, 1, 0], color = '#00ffff', scale = 1, model, modelPath } = obj;
     const [x, y, z] = position;
+    
+    // If a 3D model file path is provided, load and render it
+    if (modelPath) {
+      return (
+        <ModelLoader
+          key={index}
+          modelPath={modelPath}
+          position={[x, y, z]}
+          scale={scale}
+          color={color}
+        />
+      );
+    }
 
     const commonProps = {
       key: index,
@@ -42,7 +89,8 @@ const SceneObjects = ({ objects }) => {
     }
 
     // Render Iron Man suit
-    if (type === 'suit' || model === 'iron_man') {
+    if (type === 'suit' || model === 'iron_man' || model === 'iron_man_mark1') {
+      // Use simple geometric representation (fallback when no 3D model file is provided)
       const suitColor = color === '#ff0000' ? '#ff0000' : '#ff4444';
       return (
         <group position={[x, y, z]} {...commonProps}>

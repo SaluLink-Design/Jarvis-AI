@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify  # pyright: ignore[reportMissingImports]
+from flask import Flask, request, jsonify, send_from_directory  # pyright: ignore[reportMissingImports]
 from flask_cors import CORS  # pyright: ignore[reportMissingModuleSource]
 import spacy  # pyright: ignore[reportMissingImports]
 import re
@@ -15,6 +15,11 @@ load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
+
+# Configure Flask to serve static files from public directory
+public_dir = os.path.join(os.path.dirname(__file__), '..', 'public')
+app.config['UPLOAD_FOLDER'] = os.path.join(public_dir, 'uploads')
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Load spaCy model for NLP
 nlp = None
@@ -89,6 +94,11 @@ class SceneGenerator:
                         'color': default_color,
                         'scale': default_scale
                     }
+                    
+                    # Add modelPath for Iron Man Mark 1 if detected
+                    if shape_type == 'suit' and ('mark 1' in text or 'mark i' in text or 'mark1' in text):
+                        obj['modelPath'] = '/models/iron_man_mark1.glb'
+                        obj['model'] = 'iron_man_mark1'
                     
                     # Extract color
                     for color_name, color_hex in self.color_map.items():
@@ -196,8 +206,11 @@ class ImageAnalyzer:
             'car': {'type': 'car', 'model': 'car', 'scale': 2.0, 'color': '#ff0000'},
             'vehicle': {'type': 'car', 'model': 'car', 'scale': 2.0, 'color': '#ff0000'},
             'automobile': {'type': 'car', 'model': 'car', 'scale': 2.0, 'color': '#ff0000'},
-            'iron man': {'type': 'suit', 'model': 'iron_man', 'scale': 1.5, 'color': '#ff0000'},
-            'ironman': {'type': 'suit', 'model': 'iron_man', 'scale': 1.5, 'color': '#ff0000'},
+            'iron man': {'type': 'suit', 'model': 'iron_man', 'scale': 1.5, 'color': '#ff0000', 'modelPath': '/models/iron_man_mark1.glb'},
+            'ironman': {'type': 'suit', 'model': 'iron_man', 'scale': 1.5, 'color': '#ff0000', 'modelPath': '/models/iron_man_mark1.glb'},
+            'iron man mark 1': {'type': 'suit', 'model': 'iron_man_mark1', 'scale': 1.5, 'color': '#ff0000', 'modelPath': '/models/iron_man_mark1.glb'},
+            'iron man mark i': {'type': 'suit', 'model': 'iron_man_mark1', 'scale': 1.5, 'color': '#ff0000', 'modelPath': '/models/iron_man_mark1.glb'},
+            'mark 1': {'type': 'suit', 'model': 'iron_man_mark1', 'scale': 1.5, 'color': '#ff0000', 'modelPath': '/models/iron_man_mark1.glb'},
             'suit': {'type': 'suit', 'model': 'suit', 'scale': 1.5, 'color': '#ff0000'},
             'robot': {'type': 'robot', 'model': 'robot', 'scale': 1.5, 'color': '#888888'},
             'person': {'type': 'human', 'model': 'human', 'scale': 1.0, 'color': '#ffdbac'},
@@ -307,6 +320,10 @@ class ImageAnalyzer:
             'description': model_info.get('description', description or 'uploaded_image')
         }
         
+        # Add modelPath if available (for loading detailed 3D models)
+        if 'modelPath' in model_info:
+            obj['modelPath'] = model_info['modelPath']
+        
         return obj
 
 
@@ -323,7 +340,8 @@ def root():
         'endpoints': {
             'health': '/api/health',
             'process_text': '/api/process-text (POST)',
-            'process_image': '/api/process-image (POST)'
+            'process_image': '/api/process-image (POST)',
+            'process_model': '/api/process-model (POST)'
         },
         'status': 'online'
     })
@@ -377,6 +395,59 @@ def process_image():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/process-model', methods=['POST'])
+def process_model():
+    """Process uploaded 3D model file (GLB/GLTF) and return file path"""
+    try:
+        if 'model' not in request.files:
+            return jsonify({'error': 'No model file provided'}), 400
+        
+        model_file = request.files['model']
+        
+        if model_file.filename == '':
+            return jsonify({'error': 'No model file selected'}), 400
+        
+        # Validate file extension
+        filename = model_file.filename.lower()
+        if not (filename.endswith('.glb') or filename.endswith('.gltf')):
+            return jsonify({'error': 'Invalid file type. Please upload a GLB or GLTF file.'}), 400
+        
+        # Save file with a unique name to avoid conflicts
+        import uuid
+        unique_filename = f"{uuid.uuid4()}_{model_file.filename}"
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+        model_file.save(file_path)
+        
+        # Return the public URL path
+        model_url = f"/uploads/{unique_filename}"
+        
+        # Create object data for the scene
+        obj = {
+            'type': 'custom',
+            'model': 'uploaded_model',
+            'position': [0, 1, 0],
+            'color': '#ffffff',
+            'scale': 1.0,
+            'modelPath': model_url,
+            'source': 'file_upload',
+            'fileName': model_file.filename
+        }
+        
+        result = {
+            'sceneData': {
+                'objects': [obj],
+                'lighting': {'type': 'ambient', 'intensity': 1},
+                'environment': 'default'
+            }
+        }
+        
+        return jsonify(result)
+    
+    except Exception as e:
+        print(f"Error processing model: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
@@ -384,6 +455,16 @@ def health_check():
         'status': 'online',
         'nlp_available': nlp is not None
     })
+
+
+@app.route('/uploads/<filename>')
+def serve_uploaded_file(filename):
+    """Serve uploaded 3D model files"""
+    try:
+        return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+    except Exception as e:
+        print(f"Error serving file {filename}: {e}")
+        return jsonify({'error': 'File not found'}), 404
 
 
 if __name__ == '__main__':

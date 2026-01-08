@@ -81,6 +81,39 @@ const App = () => {
     }
   };
 
+  const handleModelUpload = async (file) => {
+    setLoading(true);
+    try {
+      // Create an object URL for the GLB file to load it directly in the browser
+      const objectUrl = URL.createObjectURL(file);
+      
+      // Create a new object in the scene with the uploaded model
+      const newObject = {
+        type: 'custom',
+        model: 'uploaded_model',
+        position: [0, 1, 0],
+        color: '#ffffff',
+        scale: 1.0,
+        modelPath: objectUrl, // Use object URL for direct loading
+        source: 'file_upload',
+        fileName: file.name
+      };
+
+      // Add the object to the scene
+      setSceneData(prev => ({
+        ...prev,
+        objects: [...prev.objects, newObject]
+      }));
+
+      console.log('3D model uploaded:', file.name);
+    } catch (error) {
+      console.error('Error loading 3D model:', error);
+      alert(`Error loading 3D model: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="app">
       <Header />
@@ -89,6 +122,7 @@ const App = () => {
         <InputPanel 
           onTextSubmit={handleTextInput}
           onImageUpload={handleImageUpload}
+          onModelUpload={handleModelUpload}
           loading={loading}
         />
       </div>
