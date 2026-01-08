@@ -160,6 +160,21 @@ class SceneGenerator:
 scene_generator = SceneGenerator()
 
 
+@app.route('/', methods=['GET'])
+def root():
+    """Root endpoint with API information"""
+    return jsonify({
+        'message': 'Jarvis AI Backend API',
+        'version': '1.0.0',
+        'endpoints': {
+            'health': '/api/health',
+            'process_text': '/api/process-text (POST)',
+            'process_image': '/api/process-image (POST)'
+        },
+        'status': 'online'
+    })
+
+
 @app.route('/api/process-text', methods=['POST'])
 def process_text():
     """Process natural language text to generate 3D scene"""
