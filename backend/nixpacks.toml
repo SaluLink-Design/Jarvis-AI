@@ -1,0 +1,15 @@
+[phases.setup]
+nixPkgs = ["python311", "gcc", "gccStdenv"]
+
+[phases.install]
+cmds = [
+  "pip install --upgrade pip setuptools wheel",
+  "pip install -r requirements.txt"
+]
+
+[phases.build]
+cmds = []
+
+[start]
+cmd = "gunicorn app:app --bind 0.0.0.0:$PORT"
+

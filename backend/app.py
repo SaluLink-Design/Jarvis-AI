@@ -10,8 +10,21 @@ CORS(app)
 # Load spaCy model for NLP
 try:
     nlp = spacy.load("en_core_web_sm")
-except:
-    print("Please install spaCy model: python -m spacy download en_core_web_sm")
+except OSError:
+    # Model not found, try to download it
+    import subprocess
+    import sys
+    print("spaCy model not found. Attempting to download...")
+    try:
+        subprocess.check_call([sys.executable, "-m", "spacy", "download", "en_core_web_sm"])
+        nlp = spacy.load("en_core_web_sm")
+        print("spaCy model downloaded successfully!")
+    except Exception as e:
+        print(f"Failed to download spaCy model: {e}")
+        print("Please install spaCy model: python -m spacy download en_core_web_sm")
+        nlp = None
+except Exception as e:
+    print(f"Error loading spaCy model: {e}")
     nlp = None
 
 # Simple rule-based text-to-3D scene generator
