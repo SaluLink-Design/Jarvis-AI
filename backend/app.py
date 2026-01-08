@@ -35,7 +35,11 @@ class SceneGenerator:
             'cube': ['cube', 'box', 'square'],
             'sphere': ['sphere', 'ball', 'orb', 'globe'],
             'cylinder': ['cylinder', 'tube', 'pipe'],
-            'cone': ['cone', 'pyramid']
+            'cone': ['cone', 'pyramid'],
+            'car': ['car', 'vehicle', 'automobile', 'truck'],
+            'suit': ['iron man', 'ironman', 'suit', 'armor'],
+            'robot': ['robot', 'android', 'bot'],
+            'airplane': ['airplane', 'plane', 'aircraft', 'jet']
         }
         
         self.color_map = {
@@ -75,11 +79,15 @@ class SceneGenerator:
         for shape_type, keywords in self.shape_keywords.items():
             for keyword in keywords:
                 if keyword in text:
+                    default_scale = 2.0 if shape_type in ['car', 'airplane'] else 1.5 if shape_type in ['suit', 'robot'] else 1.0
+                    default_color = '#ff0000' if shape_type in ['car', 'suit'] else '#888888' if shape_type == 'robot' else '#ffffff' if shape_type == 'airplane' else '#00ffff'
+
                     obj = {
                         'type': shape_type,
+                        'model': shape_type,
                         'position': [0, 1, 0],
-                        'color': '#00ffff',
-                        'scale': 1.0
+                        'color': default_color,
+                        'scale': default_scale
                     }
                     
                     # Extract color
