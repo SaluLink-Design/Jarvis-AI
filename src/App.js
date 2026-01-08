@@ -28,7 +28,15 @@ const App = () => {
       if (response.ok) {
         const data = await response.json();
         console.log('Scene data received:', data);
-        setSceneData(data.sceneData);
+        // Add IDs to objects if they don't have them
+        const sceneDataWithIds = {
+          ...data.sceneData,
+          objects: (data.sceneData?.objects || []).map((obj, index) => ({
+            ...obj,
+            id: obj.id || `object_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`
+          }))
+        };
+        setSceneData(sceneDataWithIds);
       } else {
         console.error('Response not OK:', response.status, response.statusText);
         const errorText = await response.text();
@@ -61,11 +69,22 @@ const App = () => {
         console.log('Image processing result:', data);
         // Handle both old format (data.objects) and new format (data.sceneData)
         if (data.sceneData) {
-          setSceneData(data.sceneData);
+          const sceneDataWithIds = {
+            ...data.sceneData,
+            objects: (data.sceneData.objects || []).map((obj, index) => ({
+              ...obj,
+              id: obj.id || `object_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`
+            }))
+          };
+          setSceneData(sceneDataWithIds);
         } else if (data.objects) {
+          const objectsWithIds = data.objects.map((obj, index) => ({
+            ...obj,
+            id: obj.id || `object_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`
+          }));
           setSceneData(prev => ({
             ...prev,
-            objects: [...prev.objects, ...data.objects]
+            objects: [...prev.objects, ...objectsWithIds]
           }));
         }
       } else {
@@ -96,7 +115,8 @@ const App = () => {
         scale: 1.0,
         modelPath: objectUrl, // Use object URL for direct loading
         source: 'file_upload',
-        fileName: file.name
+        fileName: file.name,
+        id: `model_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` // Unique ID for each model
       };
 
       // Add the object to the scene
@@ -114,6 +134,39 @@ const App = () => {
     }
   };
 
+  const handleObjectScaleChange = (objectId, newScale) => {
+    if (!objectId) return;
+    setSceneData(prev => ({
+      ...prev,
+      objects: prev.objects.map(obj => 
+        obj.id === objectId ? { ...obj, scale: newScale } : obj
+      )
+    }));
+  };
+
+  const handleObjectPositionChange = (objectId, axis, value) => {
+    if (!objectId) return;
+    setSceneData(prev => ({
+      ...prev,
+      objects: prev.objects.map(obj => {
+        if (obj.id === objectId) {
+          const newPosition = [...(obj.position || [0, 0, 0])];
+          newPosition[axis] = value;
+          return { ...obj, position: newPosition };
+        }
+        return obj;
+      })
+    }));
+  };
+
+  const handleRemoveObject = (objectId) => {
+    if (!objectId) return;
+    setSceneData(prev => ({
+      ...prev,
+      objects: prev.objects.filter(obj => obj.id !== objectId)
+    }));
+  };
+
   return (
     <div className="app">
       <Header />
@@ -123,6 +176,10 @@ const App = () => {
           onTextSubmit={handleTextInput}
           onImageUpload={handleImageUpload}
           onModelUpload={handleModelUpload}
+          sceneData={sceneData}
+          onObjectScaleChange={handleObjectScaleChange}
+          onObjectPositionChange={handleObjectPositionChange}
+          onRemoveObject={handleRemoveObject}
           loading={loading}
         />
       </div>
