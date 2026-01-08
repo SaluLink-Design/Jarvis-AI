@@ -15,13 +15,13 @@ const App = () => {
   const handleTextInput = async (text) => {
     setLoading(true);
     try {
-      // Call backend API to process text
-      const response = await fetch('/api/process-text', {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || '';
+      const response = await fetch(`${backendUrl}/api/process-text`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text })
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setSceneData(data.sceneData);
@@ -39,7 +39,8 @@ const App = () => {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await fetch('/api/process-image', {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || '';
+      const response = await fetch(`${backendUrl}/api/process-image`, {
         method: 'POST',
         body: formData
       });
