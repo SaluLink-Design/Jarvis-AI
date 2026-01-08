@@ -16,6 +16,9 @@ const App = () => {
     setLoading(true);
     try {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || '';
+      console.log('Backend URL:', backendUrl);
+      console.log('Full API URL:', `${backendUrl}/api/process-text`);
+
       const response = await fetch(`${backendUrl}/api/process-text`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -24,10 +27,16 @@ const App = () => {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('Scene data received:', data);
         setSceneData(data.sceneData);
+      } else {
+        console.error('Response not OK:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
       }
     } catch (error) {
       console.error('Error processing text:', error);
+      alert(`Error connecting to backend: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -40,6 +49,8 @@ const App = () => {
       formData.append('image', file);
 
       const backendUrl = process.env.REACT_APP_BACKEND_URL || '';
+      console.log('Uploading image to:', `${backendUrl}/api/process-image`);
+
       const response = await fetch(`${backendUrl}/api/process-image`, {
         method: 'POST',
         body: formData
@@ -47,13 +58,19 @@ const App = () => {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('Image processing result:', data);
         setSceneData(prev => ({
           ...prev,
           objects: [...prev.objects, ...data.objects]
         }));
+      } else {
+        console.error('Response not OK:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
       }
     } catch (error) {
       console.error('Error processing image:', error);
+      alert(`Error connecting to backend: ${error.message}`);
     } finally {
       setLoading(false);
     }
