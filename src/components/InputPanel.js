@@ -6,9 +6,14 @@ const InputPanel = ({
   onImageUpload, 
   onModelUpload, 
   sceneData,
+  modelParts,
+  simulations,
   onObjectScaleChange,
   onObjectPositionChange,
   onRemoveObject,
+  onTogglePart,
+  onStartSimulation,
+  onStopSimulation,
   loading 
 }) => {
   const [textInput, setTextInput] = useState('');
@@ -198,9 +203,24 @@ const InputPanel = ({
                     </div>
                     
                     <div className="control-group">
-                      <label className="control-label">
-                        Scale: {obj.scale < 0.1 ? obj.scale?.toFixed(3) : obj.scale?.toFixed(2) || '1.00'}
-                      </label>
+                      <div className="scale-input-row">
+                        <label className="control-label">Scale</label>
+                        <input
+                          type="number"
+                          min="0.001"
+                          max="10"
+                          step="0.001"
+                          value={obj.scale || 1}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value);
+                            if (!isNaN(val) && val >= 0.001 && val <= 10) {
+                              onObjectScaleChange(objectId, val);
+                            }
+                          }}
+                          className="scale-input-field"
+                          placeholder="0.01"
+                        />
+                      </div>
                       <input
                         type="range"
                         min="0.01"
@@ -215,6 +235,13 @@ const InputPanel = ({
                         <span>5.0</span>
                       </div>
                       <div className="quick-scale-buttons">
+                        <button
+                          className="quick-scale-btn"
+                          onClick={() => onObjectScaleChange(objectId, 0.01)}
+                          title="Tiny"
+                        >
+                          0.01
+                        </button>
                         <button
                           className="quick-scale-btn"
                           onClick={() => onObjectScaleChange(objectId, 0.05)}
@@ -281,6 +308,69 @@ const InputPanel = ({
                         </div>
                       </div>
                     </div>
+
+                    {/* Model Analysis & Parts Control */}
+                    {obj.modelPath && modelParts[objectId] && (
+                      <div className="model-analysis-section">
+                        <label className="control-label">Model Parts ({modelParts[objectId].length})</label>
+                        <div className="parts-list">
+                          {modelParts[objectId].slice(0, 10).map((part, partIndex) => (
+                            <label key={partIndex} className="part-checkbox">
+                              <input
+                                type="checkbox"
+                                checked={!obj.hiddenParts?.includes(part.name)}
+                                onChange={() => onTogglePart(objectId, part.name)}
+                              />
+                              <span className="part-name">{part.name}</span>
+                            </label>
+                          ))}
+                          {modelParts[objectId].length > 10 && (
+                            <p className="parts-more">+ {modelParts[objectId].length - 10} more parts</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Simulations */}
+                    {obj.modelPath && (
+                      <div className="simulations-section">
+                        <label className="control-label">Simulations</label>
+                        <div className="simulation-buttons">
+                          {simulations[objectId] ? (
+                            <button
+                              className="simulation-btn stop"
+                              onClick={() => onStopSimulation(objectId)}
+                            >
+                              Stop Simulation
+                            </button>
+                          ) : (
+                            <>
+                              <button
+                                className="simulation-btn"
+                                onClick={() => onStartSimulation(objectId, 'arc_reactor_blast')}
+                                title="Arc Reactor Energy Blast"
+                              >
+                                ⚡ Arc Blast
+                              </button>
+                              <button
+                                className="simulation-btn"
+                                onClick={() => onStartSimulation(objectId, 'hover')}
+                                title="Hover Animation"
+                              >
+                                🚀 Hover
+                              </button>
+                              <button
+                                className="simulation-btn"
+                                onClick={() => onStartSimulation(objectId, 'rotate')}
+                                title="Rotation Animation"
+                              >
+                                🔄 Rotate
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   );
                 })}

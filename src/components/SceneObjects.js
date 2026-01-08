@@ -1,20 +1,48 @@
-import React from 'react';
+import React, { useMemo, useRef, useEffect } from 'react';
 import { Box, Sphere, Cylinder, Cone, useGLTF } from '@react-three/drei';
+import * as THREE from 'three';
+import { SimulationManager } from './SimulationEffects';
 
-// Preload common models (can be expanded)
-// Note: If modelPath doesn't exist, the system will fall back to simple shapes
-const ModelLoader = ({ modelPath, position, scale, color }) => {
+// Enhanced ModelLoader with part analysis and control
+const ModelLoader = ({ modelPath, position, scale, color, hiddenParts = [], onPartsAnalyzed, objectId, simulation }) => {
   const { scene } = useGLTF(modelPath);
+  const groupRef = useRef();
   
-  React.useEffect(() => {
-    // Apply color tint if provided
-    if (color && scene) {
+  // Analyze model parts when loaded
+  useEffect(() => {
+    if (scene && onPartsAnalyzed) {
+      const parts = [];
       scene.traverse((child) => {
+        if (child.isMesh) {
+          const partName = child.name || `Part_${parts.length}`;
+          const bbox = new THREE.Box3().setFromObject(child);
+          const size = bbox.getSize(new THREE.Vector3());
+          parts.push({
+            name: partName,
+            mesh: child,
+            size: { x: size.x, y: size.y, z: size.z },
+            position: child.position.clone(),
+            visible: true
+          });
+        }
+      });
+      onPartsAnalyzed(objectId, parts);
+    }
+  }, [scene, onPartsAnalyzed, objectId]);
+  
+  // Clone and modify the scene
+  const modifiedScene = useMemo(() => {
+    if (!scene) return null;
+    
+    const cloned = scene.clone();
+    
+    // Apply color tint if provided
+    if (color) {
+      cloned.traverse((child) => {
         if (child.isMesh && child.material) {
-          // Only modify color if material exists and is not an array
           if (Array.isArray(child.material)) {
             child.material.forEach(mat => {
-              if (mat) mat.color.set(color);
+              if (mat && mat.color) mat.color.set(color);
             });
           } else if (child.material.color) {
             child.material.color.set(color);
@@ -22,33 +50,61 @@ const ModelLoader = ({ modelPath, position, scale, color }) => {
         }
       });
     }
-  }, [scene, color]);
+    
+    // Hide specified parts
+    if (hiddenParts.length > 0) {
+      cloned.traverse((child) => {
+        if (child.isMesh) {
+          const partName = child.name || '';
+          if (hiddenParts.includes(partName)) {
+            child.visible = false;
+          }
+        }
+      });
+    }
+    
+    return cloned;
+  }, [scene, color, hiddenParts]);
+  
+  if (!modifiedScene) return null;
   
   return (
-    <primitive 
-      object={scene.clone()} 
-      position={position} 
-      scale={scale}
-      castShadow
-      receiveShadow
-    />
+    <group ref={groupRef} position={position} scale={scale}>
+      <primitive 
+        object={modifiedScene} 
+        castShadow
+        receiveShadow
+      />
+      {simulation && (
+        <SimulationManager
+          objectId={objectId}
+          simulation={simulation}
+          objectPosition={position}
+          objectRef={groupRef}
+        />
+      )}
+    </group>
   );
 };
 
-const SceneObjects = ({ objects }) => {
+const SceneObjects = ({ objects, onPartsAnalyzed, simulations = {} }) => {
   const renderObject = (obj, index) => {
-    const { type, position = [0, 1, 0], color = '#00ffff', scale = 1, model, modelPath } = obj;
+    const { type, position = [0, 1, 0], color = '#00ffff', scale = 1, model, modelPath, id, hiddenParts = [] } = obj;
     const [x, y, z] = position;
     
     // If a 3D model file path is provided, load and render it
     if (modelPath) {
       return (
         <ModelLoader
-          key={index}
+          key={id || index}
+          objectId={id}
           modelPath={modelPath}
           position={[x, y, z]}
           scale={scale}
           color={color}
+          hiddenParts={hiddenParts}
+          onPartsAnalyzed={onPartsAnalyzed}
+          simulation={simulations[id]}
         />
       );
     }

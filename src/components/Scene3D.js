@@ -4,7 +4,7 @@ import { OrbitControls, Environment, Grid, Sky } from '@react-three/drei';
 import './Scene3D.css';
 import SceneObjects from './SceneObjects';
 
-const Scene3D = ({ sceneData, loading }) => {
+const Scene3D = ({ sceneData, loading, onPartsAnalyzed, simulations }) => {
   return (
     <div className="scene-container">
       <Canvas
@@ -42,7 +42,11 @@ const Scene3D = ({ sceneData, loading }) => {
           />
 
           {/* Scene Objects */}
-          <SceneObjects objects={sceneData.objects} />
+          <SceneObjects 
+            objects={sceneData.objects} 
+            onPartsAnalyzed={onPartsAnalyzed}
+            simulations={simulations}
+          />
 
           {/* Controls */}
           <OrbitControls

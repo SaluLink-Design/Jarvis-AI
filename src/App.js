@@ -11,6 +11,8 @@ const App = () => {
     environment: 'default'
   });
   const [loading, setLoading] = useState(false);
+  const [modelParts, setModelParts] = useState({}); // Store analyzed parts for each model
+  const [simulations, setSimulations] = useState({}); // Store active simulations
 
   const handleTextInput = async (text) => {
     setLoading(true);
@@ -166,21 +168,84 @@ const App = () => {
       ...prev,
       objects: prev.objects.filter(obj => obj.id !== objectId)
     }));
+    // Clean up parts and simulations for removed object
+    setModelParts(prev => {
+      const updated = { ...prev };
+      delete updated[objectId];
+      return updated;
+    });
+    setSimulations(prev => {
+      const updated = { ...prev };
+      delete updated[objectId];
+      return updated;
+    });
+  };
+
+  const handlePartsAnalyzed = (objectId, parts) => {
+    setModelParts(prev => ({
+      ...prev,
+      [objectId]: parts
+    }));
+  };
+
+  const handleTogglePart = (objectId, partName) => {
+    setSceneData(prev => ({
+      ...prev,
+      objects: prev.objects.map(obj => {
+        if (obj.id === objectId) {
+          const hiddenParts = obj.hiddenParts || [];
+          const newHiddenParts = hiddenParts.includes(partName)
+            ? hiddenParts.filter(p => p !== partName)
+            : [...hiddenParts, partName];
+          return { ...obj, hiddenParts: newHiddenParts };
+        }
+        return obj;
+      })
+    }));
+  };
+
+  const handleStartSimulation = (objectId, simulationType) => {
+    setSimulations(prev => ({
+      ...prev,
+      [objectId]: {
+        type: simulationType,
+        active: true,
+        startTime: Date.now()
+      }
+    }));
+  };
+
+  const handleStopSimulation = (objectId) => {
+    setSimulations(prev => {
+      const updated = { ...prev };
+      delete updated[objectId];
+      return updated;
+    });
   };
 
   return (
     <div className="app">
       <Header />
       <div className="main-content">
-        <Scene3D sceneData={sceneData} loading={loading} />
+        <Scene3D 
+          sceneData={sceneData} 
+          loading={loading}
+          onPartsAnalyzed={handlePartsAnalyzed}
+          simulations={simulations}
+        />
         <InputPanel 
           onTextSubmit={handleTextInput}
           onImageUpload={handleImageUpload}
           onModelUpload={handleModelUpload}
           sceneData={sceneData}
+          modelParts={modelParts}
+          simulations={simulations}
           onObjectScaleChange={handleObjectScaleChange}
           onObjectPositionChange={handleObjectPositionChange}
           onRemoveObject={handleRemoveObject}
+          onTogglePart={handleTogglePart}
+          onStartSimulation={handleStartSimulation}
+          onStopSimulation={handleStopSimulation}
           loading={loading}
         />
       </div>
